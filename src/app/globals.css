@@ -1,8 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
 }
 
 @theme inline {
@@ -10,6 +13,11 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-azulPrincial: #163A82;
+  --color-azulFundo: #CCDDFF;
+  --color-azulContraste: #102B61;
+  --color-brancoNeve: #FDF8F3;
+  --color-pretoBase: #1E1E1E;
 }
 
 @media (prefers-color-scheme: dark) {
