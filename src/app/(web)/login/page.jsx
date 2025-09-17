@@ -38,6 +38,7 @@ export default function LoginPage() {
       setMessageType('success');
 
       router.push('/dashboard');
+      
     } catch (error) {
       setMessage(error.message);
       setMessageType('error');

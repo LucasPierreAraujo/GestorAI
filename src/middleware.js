@@ -1,34 +1,42 @@
+// middleware.js
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose'; 
 
-const rotasPrivadas = ['/dashboard', '/perfil', '/outra-rota-privada'];
+// Adicione aqui apenas as rotas que não precisam de autenticação, exceto /login
+const rotasPublicas = ['/cadastro', '/'];
 
-export function middleware(req) {
-  const url = req.nextUrl.clone();
-  console.log(`middleware`,url)
+export async function middleware(req) {
+  const { pathname } = req.nextUrl;
   const token = req.cookies.get('token')?.value;
 
-  // Se não for rota privada, deixa passar
-  if (!rotasPrivadas.includes(url.pathname)) return NextResponse.next();
+  console.log(`Middleware ativado para a rota: ${pathname}`);
 
-  // Se não tiver token, redireciona para login
-  if (!token) {
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
+  // Permite que a página de login seja acessada sem checagem
+  if (pathname === '/login') {
+    return NextResponse.next();
   }
 
+  // 1. Redirecionar usuário logado de rotas públicas
+  if (token && rotasPublicas.includes(pathname)) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  // 2. Proteger rotas privadas
+  if (!token && !rotasPublicas.includes(pathname)) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+  
+  // 3. Verifica a validade do token para continuar
   try {
-    // Verifica se o token é válido
-    jwt.verify(token, process.env.JWT_SECRET);
+    await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET));
     return NextResponse.next();
   } catch (err) {
-    // Token inválido ou expirado
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
+    // Token inválido ou expirado, redireciona para login
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 }
 
-// Aplica middleware nas rotas privadas
+// O matcher agora roda em todas as rotas
 export const config = {
-  matcher: ['/dashboard/:path*', '/perfil/:path*', '/outra-rota-privada/:path*'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|logo.png|vercel.svg|window.svg).*)'],
 };
