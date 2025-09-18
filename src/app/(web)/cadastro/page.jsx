@@ -4,6 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
+const capitalizeName = (name) => {
+  if (!name) return '';
+  return name.split(' ').map(word => {
+    if (word.length === 0) return '';
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }).join(' ');
+};
+
 export default function CadastroPage() {
   const [nomeCompleto, setNomeCompleto] = useState('');
   const [email, setEmail] = useState('');
@@ -28,12 +36,14 @@ export default function CadastroPage() {
       setMessageType('error');
       return;
     }
+    
+    const nomeFormatado = capitalizeName(nomeCompleto);
 
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nomeCompleto, email, senha, repitaSenha }),
+        body: JSON.stringify({ nomeCompleto: nomeFormatado, email, senha, repitaSenha }),
       });
 
       const result = await response.json();
@@ -44,7 +54,7 @@ export default function CadastroPage() {
       setMessageType('success');
 
       setTimeout(() => {
-        router.push('/login'); // Redireciona para login
+        router.push('/login');
       }, 1500);
 
     } catch (error) {
@@ -113,7 +123,7 @@ export default function CadastroPage() {
               type="submit"
               className="w-full bg-azulContraste text-white p-3 rounded-full font-semibold"
             >
-              Entrar
+              Cadastrar
             </button>
 
             {message && (
