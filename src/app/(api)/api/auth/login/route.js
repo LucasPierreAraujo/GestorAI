@@ -22,7 +22,12 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Email ou senha inválidos.' }, { status: 401 });
   }
 
-  const payload = { id: usuario.id };
+  // Corrigido: Adicione o nomeCompleto ao payload do token
+  const payload = { 
+    id: usuario.id,
+    nomeCompleto: usuario.nomeCompleto, 
+  };
+  
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
   return NextResponse.json({ message: 'Login bem-sucedido!', token }, { status: 200 });

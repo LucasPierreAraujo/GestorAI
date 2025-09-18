@@ -55,7 +55,7 @@ export default function CadastroPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 to-blue-200 px-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg flex flex-col sm:flex-row w-full max-w-3xl">
+      <div className="bg-white p-8 rounded-2xl shadow-lg flex h-[400px] flex-col sm:flex-row w-full max-w-3xl">
         
         {/* Lado Esquerdo - Logo com botão de Login acima */}
         <div className="flex-1 flex flex-col items-center justify-center p-10 space-y-4">

@@ -2,8 +2,8 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose'; 
 
-// Adicione aqui apenas as rotas que não precisam de autenticação, exceto /login
-const rotasPublicas = ['/cadastro', '/'];
+// Rotas que não precisam de autenticação (públicas)
+const rotasPublicas = ['/', '/cadastro', '/login'];
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
@@ -11,32 +11,32 @@ export async function middleware(req) {
 
   console.log(`Middleware ativado para a rota: ${pathname}`);
 
-  // Permite que a página de login seja acessada sem checagem
-  if (pathname === '/login') {
-    return NextResponse.next();
-  }
-
-  // 1. Redirecionar usuário logado de rotas públicas
+  // 1. Se o usuário já estiver logado e tentar acessar rota pública, redireciona para dashboard
   if (token && rotasPublicas.includes(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
-  // 2. Proteger rotas privadas
+  // 2. Se usuário não estiver logado e tentar acessar rota privada, redireciona para login
   if (!token && !rotasPublicas.includes(pathname)) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
-  
-  // 3. Verifica a validade do token para continuar
-  try {
-    await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET));
-    return NextResponse.next();
-  } catch (err) {
-    // Token inválido ou expirado, redireciona para login
-    return NextResponse.redirect(new URL('/login', req.url));
+
+  // 3. Se houver token, verificar validade
+  if (token) {
+    try {
+      await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET));
+      return NextResponse.next();
+    } catch (err) {
+      console.log('Token inválido ou expirado:', err);
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
   }
+
+  // 4. Se rota pública sem token, apenas deixa passar
+  return NextResponse.next();
 }
 
-// O matcher agora roda em todas as rotas
+// Matcher que ignora arquivos estáticos e API
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|logo.png|vercel.svg|window.svg).*)'],
 };

@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-azulFundo">
-      <div className="bg-brancoNeve shadow-lg rounded-2xl flex flex-col md:flex-row w-[90%] max-w-4xl p-8 md:p-0">
+      <div className="bg-brancoNeve h-[400px] shadow-lg rounded-2xl flex flex-col md:flex-row w-[90%] max-w-4xl p-8 md:p-0">
         
         {/* Lado esquerdo - Formulário */}
         <div className="flex-1 flex flex-col justify-center px-8 py-10">
