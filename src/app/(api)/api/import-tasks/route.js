@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import prisma from '../../../../lib/prisma';
-import { stringify } from 'csv-stringify';
+import { parse } from 'csv-parse';
 
 // Middleware para verificar a autenticação
 function verificarToken(request) {
@@ -17,8 +17,8 @@ function verificarToken(request) {
   }
 }
 
-// Rota de Importar (baixa do banco para o computador)
-export async function GET(request) {
+// Rota de Importar (envia do computador para o banco)
+export async function POST(request) {
   const verificacao = verificarToken(request);
   if (verificacao.status !== 200) {
     return NextResponse.json({ error: verificacao.error }, { status: verificacao.status });
@@ -27,40 +27,37 @@ export async function GET(request) {
   const { id: userId } = verificacao.usuario;
 
   try {
-    const tasks = await prisma.task.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        title: true,
-        isCompleted: true,
-        createdAt: true,
-      },
-    });
+    const formData = await request.formData();
+    const file = formData.get('file');
+    if (!file) {
+      return NextResponse.json({ error: 'Nenhum arquivo enviado.' }, { status: 400 });
+    }
 
-    const columns = {
-      id: 'ID',
-      title: 'Título da Tarefa',
-      isCompleted: 'Concluída',
-      createdAt: 'Data de Criação',
-    };
-
-    const csvData = await new Promise((resolve, reject) => {
-      stringify(tasks, { header: true, columns }, (err, output) => {
+    const fileContent = await file.text();
+    const tasks = await new Promise((resolve, reject) => {
+      parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+      }, (err, records) => {
         if (err) reject(err);
-        resolve(output);
+        resolve(records);
       });
     });
 
-    return new NextResponse(csvData, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/csv',
-        'Content-Disposition': 'attachment; filename="tarefas_importadas.csv"',
-      },
+    const newTasks = tasks.map(task => ({
+      title: task.title,
+      isCompleted: task.isCompleted === 'true' || task.isCompleted === '1',
+      userId,
+    }));
+
+    await prisma.task.createMany({
+      data: newTasks,
     });
 
+    return NextResponse.json({ message: 'Planilha importada com sucesso!' }, { status: 200 });
+
   } catch (error) {
-    console.error('Erro ao importar tarefas:', error);
+    console.error('Erro ao importar planilha:', error);
     return NextResponse.json({ error: 'Erro interno do servidor.' }, { status: 500 });
   }
 }
