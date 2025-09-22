@@ -13,16 +13,23 @@ const capitalizeName = (name) => {
   }).join(' ');
 };
 
+const getSummary = (text) => {
+  const words = text.split(' ');
+  return words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
+};
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
+  const [conversations, setConversations] = useState([]);
   const [currentMessage, setCurrentMessage] = useState('');
+  const [currentConversationId, setCurrentConversationId] = useState(null);
   const router = useRouter();
   const chatEndRef = useRef(null);
 
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const tokenCookie = document.cookie.split(';').find(row => row.trim().startsWith('token='));
       if (!tokenCookie) {
         router.push('/auth/login');
@@ -32,6 +39,7 @@ export default function DashboardPage() {
           const decodedUser = jwt.decode(token);
           if (decodedUser) {
             setUser(decodedUser);
+            await fetchConversations(token);
             setLoading(false);
           } else {
             router.push('/auth/login');
@@ -50,6 +58,21 @@ export default function DashboardPage() {
     }
   }, [chatHistory]);
 
+  const fetchConversations = async (token) => {
+    try {
+      const response = await fetch('/api/conversations', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data.conversations);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar conversas:', error);
+    }
+  };
+
   const handleLogout = () => {
     document.cookie = 'token=; Max-Age=0; path=/;';
     router.push('/auth/login');
@@ -59,7 +82,17 @@ export default function DashboardPage() {
     if (!currentMessage.trim()) return;
     const token = document.cookie.split(';').find(row => row.trim().startsWith('token='))?.split('=')[1];
     
-    const newUserMessage = { sender: 'user', text: currentMessage };
+    let convIdToUse = currentConversationId;
+    
+    // Salva o resumo da primeira mensagem
+    if (!convIdToUse) {
+      const summary = getSummary(currentMessage);
+      const newConv = await saveConversationSummary(token, summary);
+      convIdToUse = newConv.conversation.id;
+      setCurrentConversationId(newConv.conversation.id);
+    }
+
+    const newUserMessage = { sender: 'user', text: currentMessage, conversationId: convIdToUse };
     setChatHistory(prevHistory => [...prevHistory, newUserMessage]);
     setCurrentMessage('');
 
@@ -70,7 +103,7 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: newUserMessage.text }),
+        body: JSON.stringify({ message: newUserMessage.text, conversationId: convIdToUse }),
       });
 
       if (!response.ok) throw new Error('Erro na comunicação com o assistente.');
@@ -78,11 +111,59 @@ export default function DashboardPage() {
       const result = await response.json();
       const assistantResponse = result.response;
       
-      setChatHistory(prevHistory => [...prevHistory, { sender: 'assistant', text: assistantResponse }]);
+      setChatHistory(prevHistory => [...prevHistory, { sender: 'assistant', text: assistantResponse, conversationId: convIdToUse }]);
 
     } catch (error) {
       console.error('Erro no chat:', error);
       alert('Erro ao enviar mensagem: ' + error.message);
+    }
+  };
+
+  const saveConversationSummary = async (token, summary) => {
+    try {
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ summary }),
+      });
+      const data = await response.json();
+      fetchConversations(token); // Atualiza a lista de conversas
+      return data;
+    } catch (error) {
+      console.error('Erro ao salvar resumo da conversa:', error);
+    }
+  };
+
+  const handleNewChat = () => {
+    setChatHistory([]);
+    setCurrentMessage('');
+    setCurrentConversationId(null);
+  };
+  
+  const handleHistoryClick = async (conversationId) => {
+    const token = document.cookie.split(';').find(row => row.trim().startsWith('token='))?.split('=')[1];
+    try {
+        const response = await fetch(`/api/chat/${conversationId}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error('Erro ao carregar a conversa.');
+
+        const result = await response.json();
+        const messages = result.conversation.messages.map(msg => ({
+            sender: msg.sender,
+            text: msg.text,
+        }));
+
+        setChatHistory(messages);
+        setCurrentConversationId(conversationId);
+    } catch (error) {
+        console.error('Erro ao carregar o histórico:', error);
+        alert('Erro ao carregar a conversa: ' + error.message);
     }
   };
 
@@ -139,11 +220,22 @@ export default function DashboardPage() {
       <aside className="w-80 bg-primary p-6 flex flex-col justify-between shadow-lg">
         <div>
           <div className="mt-8">
+            <button
+              onClick={handleNewChat}
+              className="w-full bg-accent text-cream p-3 rounded-full font-semibold hover:bg-white hover:text-primary transition-colors duration-200 mb-6"
+            >
+              Novo Chat
+            </button>
             <h3 className="font-semibold mb-4 text-cream">HISTÓRICO</h3>
             <div className="space-y-2">
-              <div className="cursor-pointer p-2 rounded-lg text-cream hover:bg-accent hover:text-white transition duration-200">Ajuda com geração de resp...</div>
-              <div className="cursor-pointer p-2 rounded-lg text-cream hover:bg-accent hover:text-white transition duration-200">Ajuda com geração de resp...</div>
-              <div className="cursor-pointer p-2 rounded-lg text-cream hover:bg-accent hover:text-white transition duration-200">Ajuda com geração de resp...</div>
+              {conversations.map((conv, index) => (
+                <div 
+                  key={index} 
+                  onClick={() => handleHistoryClick(conv.id)}
+                  className="cursor-pointer p-2 rounded-lg text-cream hover:bg-accent hover:text-white transition duration-200">
+                  {conv.summary}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -180,7 +272,7 @@ export default function DashboardPage() {
               {chatHistory.map((msg, index) => (
                 <div 
                   key={index} 
-                  className={`p-3 rounded-lg max-w-[70%] ${msg.sender === 'user' ? 'bg-primary text-cream self-end ml-auto' : 'text-cream self-start'}`}
+                  className={`p-3 rounded-lg max-w-[90%] ${msg.sender === 'user' ? 'bg-primary text-cream self-end ml-auto' : 'text-cream self-start'}`}
                 >
                   {msg.text}
                 </div>

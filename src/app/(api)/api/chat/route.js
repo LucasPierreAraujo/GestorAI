@@ -39,6 +39,7 @@ export async function POST(request) {
         userId,
         title: {
           contains: message,
+         
         }
       },
       take: 5,
