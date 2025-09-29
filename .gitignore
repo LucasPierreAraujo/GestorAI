@@ -9,7 +9,8 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+/prisma/dev.db
+,/prisma/dev.db
 # testing
 /coverage
 
