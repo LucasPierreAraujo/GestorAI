@@ -1,10 +1,10 @@
-
 // app/api/telegram-webhook/route.js
-
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-// Função para gerar token interno
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+// Função para gerar token interno (opcional)
 function getInternalToken() {
   const internalPayload = { 
     id: 'external-telegram-user-id', 
@@ -18,66 +18,53 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    // Captura mensagem de diferentes cenários
+    // Captura mensagem
     const incomingMessage =
       body?.message?.text ||
       body?.text ||
-      (typeof body?.message === 'string' ? body.message : '') ||
       body?.callback_query?.data ||
       '';
 
-    // Captura chatId de diferentes tipos de payload
+    if (!incomingMessage) {
+      console.error('Mensagem ausente no payload:', body);
+      return NextResponse.json({ error: 'Mensagem ausente' }, { status: 400 });
+    }
+
+    // Captura chatId corretamente
     const chatId =
       body?.message?.chat?.id ||
+      body?.callback_query?.message?.chat?.id ||
       body?.chat_id ||
-      body?.fromNumber ||
-      body?.callback_query?.from?.id ||
-      '1376992445'; // fallback
+      null;
 
-    if (!incomingMessage) {
-      console.error('Payload inválido recebido:', body);
-      return NextResponse.json(
-        { error: 'Payload inválido: mensagem ausente.' },
-        { status: 400 }
-      );
+    if (!chatId) {
+      console.error('Não foi possível capturar chatId:', body);
+      return NextResponse.json({ error: 'chatId ausente' }, { status: 400 });
     }
 
+    // Opcional: gerar token interno
     const internalToken = getInternalToken();
 
-    // Chamada à API de chat interna
-    const response = await fetch(new URL('/api/chat', request.url), {
+    // Responder diretamente ao Telegram
+    const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${internalToken}`,
-      },
-      body: JSON.stringify({ message: incomingMessage, chatId }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `Recebi sua mensagem: "${incomingMessage}"`,
+      }),
     });
 
-    if (!response.ok) {
-      const errorDetails = await response.text();
-      console.error('Erro detalhado da API de chat:', errorDetails);
-      return NextResponse.json(
-        { error: 'Falha interna na API de Chat.' },
-        { status: 500 }
-      );
+    if (!telegramResponse.ok) {
+      const errorText = await telegramResponse.text();
+      console.error('Erro ao enviar mensagem para Telegram:', errorText);
+      return NextResponse.json({ error: 'Falha ao enviar mensagem para Telegram' }, { status: 500 });
     }
 
-    const result = await response.json();
-    const assistantResponse = result.response;
+    return NextResponse.json({ chatId, response: incomingMessage }, { status: 200 });
 
-    return NextResponse.json(
-      {
-        response: assistantResponse,
-        chatId,
-      },
-      { status: 200 }
-    );
   } catch (error) {
-    console.error('Erro no webhook do Telegram:', error.message);
-    return NextResponse.json(
-      { error: `Erro ao processar mensagem: ${error.message}` },
-      { status: 500 }
-    );
+    console.error('Erro no webhook do Telegram:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
