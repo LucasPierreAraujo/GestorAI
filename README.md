@@ -5,6 +5,7 @@ Markdown
 Este é o sistema GestorAI, um assistente virtual de produtividade e gerenciamento de tarefas desenvolvido com **Next.js**, **Prisma** e **Groq**.
 
 **Status do Deploy:** [https://gestor-ai.vercel.app](https://gestor-ai.vercel.app)
+Bot do telegram: t.me/GestoAI_Bot
 
 ## 🚀 Getting Started (Configuração Local)
 
