@@ -305,11 +305,11 @@ export default function DashboardPage() {
             <div className="flex justify-center space-x-4">
               <input type="file" id="file-input-import" className="hidden" onChange={handleImport} accept=".csv" />
               <div onClick={() => document.getElementById('file-input-import').click()} className="flex flex-col items-center p-4 bg-primary rounded-xl cursor-pointer hover:bg-accent transition duration-200">
-                <Image src="/import.svg" alt="Importar" width={32} height={32} />
+                <Image src="/export.svg" alt="Importar" width={32} height={32} />
                 <span className="mt-2 text-sm text-cream">Importar</span>
               </div>
               <div onClick={handleExport} className="flex flex-col items-center p-4 bg-primary rounded-xl cursor-pointer hover:bg-accent transition duration-200">
-                <Image src="/export.svg" alt="Exportar" width={32} height={32} />
+                <Image src="/import.svg" alt="Exportar" width={32} height={32} />
                 <span className="mt-2 text-sm text-cream">Exportar</span>
               </div>
             </div>
