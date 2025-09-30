@@ -130,7 +130,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ summary }),
       });
       const data = await response.json();
-      fetchConversations(token); // Atualiza a lista de conversas
+      fetchConversations(token); 
       return data;
     } catch (error) {
       console.error('Erro ao salvar resumo da conversa:', error);
@@ -249,10 +249,8 @@ export default function DashboardPage() {
 
         <div className="flex-1 flex flex-col items-center justify-between w-full max-w-4xl mx-auto p-4">
           
-          {/* Área de conversação */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10 bg-black-basic rounded-lg shadow-md w-full mb-8">
             
-            {/* Marca d'água da logo */}
             {chatHistory.length === 0 && (
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10 pointer-events-none z-0">
                 <Image 
