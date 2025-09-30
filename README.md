@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+Markdown
 
-## Getting Started
+# GestorAI
 
-First, run the development server:
+Este é o sistema GestorAI, um assistente virtual de produtividade e gerenciamento de tarefas desenvolvido com **Next.js**, **Prisma** e **Groq**.
+
+**Status do Deploy:** [https://gestor-ai.vercel.app](https://gestor-ai.vercel.app)
+
+## 🚀 Getting Started (Configuração Local)
+
+Siga estes passos para configurar e rodar o projeto em seu ambiente de desenvolvimento.
+
+### Pré-requisitos
+
+* Node.js (versão recomendada: 18 ou superior)
+* npm ou Yarn
+* Acesso ao seu banco de dados **PostgreSQL** (configurado via Supabase).
+
+### 1. Instalação de Dependências
+
+Instale todas as dependências do projeto:
 
 ```bash
+npm install
+# ou
+yarn install
+2. Configuração do Ambiente
+Seu projeto utiliza o PostgreSQL do Supabase e as chaves secretas.
+
+Renomeie o arquivo env.exemple para .env na raiz do projeto.
+
+Bash
+
+mv env.exemple .env 
+Edite o novo arquivo .env com suas credenciais do Supabase e chaves secretas.
+
+AVISO: Substitua os placeholders ([USUARIO], [SENHA], etc.) por suas chaves reais.
+
+Ini, TOML
+
+# --- Configuração do Banco de Dados PostgreSQL (Supabase) ---
+
+# 1. DATABASE_URL: Usada pela sua aplicação para QUERIES (Pooler/Connection String).
+DATABASE_URL="postgresql://[USUARIO]@[POOLER_URL]:6543/postgres?pgbouncer=true"
+
+# 2. DIRECT_URL: Usada pelo Prisma CLI para MIGRATIONS (URL direta).
+DIRECT_URL="postgresql://[USUARIO]:[SENHA]@[DB_HOST]:5432/postgres"
+
+# --- Chaves Secretas ---
+
+# JWT Secret para assinar e verificar tokens
+JWT_SECRET="sua_chave_secreta_jwt_aqui"
+
+# Chave da API do Groq
+GROQ_API_KEY="chave_da_api_groq_aqui"
+
+# Variável usada para integrações externas (Telegram)
+TELEGRAM_BOT_TOKEN="token_do_seu_bot_telegram_aqui"
+3. Configuração do Banco de Dados
+Aplique as migrações:
+
+Bash
+
+npx prisma migrate deploy
+4. Rodando o Servidor de Desenvolvimento
+Inicie o servidor de desenvolvimento:
+
+Bash
+
 npm run dev
-# or
+# ou
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Abra http://localhost:3000 com seu navegador.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+🤖 Configuração do Telegram Bot (Em Produção - Vercel)
+Esta seção detalha como configurar o bot para rodar diretamente com sua URL de deploy na Vercel.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+1. Pré-requisitos (BotFather)
+É obrigatório interagir com o BotFather (@BotFather) no Telegram para obter o token do bot:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+No Telegram, inicie uma conversa com o @BotFather.
 
-## Learn More
+Use o comando /newbot e siga os passos para criar seu bot e receber o TELEGRAM_BOT_TOKEN.
 
-To learn more about Next.js, take a look at the following resources:
+Este token DEVE estar configurado como variável de ambiente no seu projeto Vercel (na dashboard da Vercel).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Configurar o Webhook (Instalação Definitiva)
+Você usará a URL do seu deploy na Vercel para configurar o Webhook, que direciona todas as mensagens do Telegram para a sua API:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Endpoint: /api/telegram-webhook
+URL de Deploy: https://gestor-ai.vercel.app
 
-## Deploy on Vercel
+Use o curl no seu terminal, substituindo [TOKEN] pelo seu TELEGRAM_BOT_TOKEN:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Bash
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Comando cURL para configurar o webhook
+# Este comando DEVE ser executado no terminal, após a implantação na Vercel.
+
+curl -F "url=[https://gestor-ai.vercel.app/api/telegram-webhook](https://gestor-ai.vercel.app/api/telegram-webhook)" \
+  [https://api.telegram.org/bot](https://api.telegram.org/bot)[TOKEN]/setWebhook
+3. Teste
+Após a configuração bem-sucedida (o comando curl deve retornar "ok": true), seu bot estará ativo e pronto para receber mensagens, com o histórico salvo diretamente no seu banco de dados do Supabase.
