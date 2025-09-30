@@ -86,7 +86,7 @@ export async function POST(req) {
       content: msg.text,
     }));
     
-    // --- ALTERAÇÃO PRINCIPAL: Injetar Data e Hora Atual ---
+    // --- CORREÇÃO: Usar 'timeZone' em vez de 'timeZoneName' ---
     
     // 1. Obtém a data e hora atual formatada em Português/Brasil
     const now = new Date();
@@ -97,8 +97,8 @@ export async function POST(req) {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZoneName: 'America/Sao_Paulo', 
-      // É crucial que seu servidor Next.js esteja configurado no fuso horário correto (ex: America/Sao_Paulo)
+      // CORREÇÃO APLICADA AQUI:
+      timeZone: 'America/Sao_Paulo', // Usa a propriedade correta para o identificador
     });
 
     // 2. Cria o conteúdo do System Prompt, incluindo a data/hora
@@ -118,7 +118,7 @@ Responda sempre de forma prestativa, concisa e focada na produtividade.`;
       role: 'system',
       content: systemPromptContent,
     });
-    // --- FIM ALTERAÇÃO ---
+    // --- FIM CORREÇÃO ---
 
     // Chamada Groq
     const chatCompletion = await groq.chat.completions.create({
@@ -140,7 +140,7 @@ Responda sempre de forma prestativa, concisa e focada na produtividade.`;
     return NextResponse.json({ response: assistantResponse }, { status: 200 });
 
   } catch (error) {
-    console.error('Erro na rota de chat:', error);
+    console.error('ERRO CRÍTICO na rota de chat (Erro 500):', error);
     return NextResponse.json({ message: 'Erro interno no servidor.' }, { status: 500 });
   }
 }
