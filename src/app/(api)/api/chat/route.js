@@ -73,23 +73,35 @@ export async function POST(req) {
       },
     });
 
-    // Busca histórico completo da conversa
+    // --- MUDANÇA 1: Limita o contexto para as últimas 10 mensagens (Performance) ---
+    // Busca histórico da conversa (apenas as 10 mais recentes)
     const messages = await prisma.chatMessage.findMany({
       where: { conversationId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' }, // Busca as mais recentes primeiro
+      take: 10, // Limita o contexto a 10 mensagens (5 trocas)
     });
 
-    // Formata mensagens para Groq
-    const chatMessages = messages.map(msg => ({
+    // Formata mensagens para Groq (inverte a ordem para cronologia correta)
+    const chatMessages = messages.reverse().map(msg => ({
       role: msg.sender === 'user' ? 'user' : 'assistant',
       content: msg.text,
     }));
+    // --- FIM MUDANÇA 1 ---
 
+
+    // --- MUDANÇA 2: Instrução do Sistema detalhada (Foco) ---
     // Adiciona instrução do sistema
     chatMessages.unshift({
       role: 'system',
-      content: 'Você é um assistente virtual que ajuda a organizar tarefas e responder dúvidas.',
+      content: `Você é o GestorAI, um assistente virtual de produtividade. Sua função principal é ajudar o usuário a organizar tarefas e responder dúvidas.
+
+Se o usuário pedir para 'criar uma tarefa', você DEVE pedir os detalhes da tarefa (qual o título ou o que precisa ser feito) para que a tarefa possa ser criada através da sua interface.
+
+Exemplo de resposta ao pedido de tarefa: 'Com certeza! Para eu criar a tarefa, qual o título ou o que você precisa que seja feito?'
+
+Responda sempre de forma prestativa, concisa e focada na produtividade.`,
     });
+    // --- FIM MUDANÇA 2 ---
 
     // Chamada Groq
     const chatCompletion = await groq.chat.completions.create({
