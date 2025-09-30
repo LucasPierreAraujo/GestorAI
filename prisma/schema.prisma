@@ -4,38 +4,41 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// MUDANÇA 1: Altera o provider para "postgresql"
+// MUDANÇA 2: Adiciona a directUrl para o Prisma Migrate funcionar no Supabase
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") 
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  senha     String
-  nomeCompleto String
-  
-  tasks     Task[]
-  conversations Conversation[]
+  id              String         @id @default(uuid())
+  email           String         @unique
+  senha           String
+  nomeCompleto    String
+
+  tasks           Task[]
+  conversations   Conversation[]
 }
 
 model Task {
-  id        String   @id @default(uuid())
-  title     String
-  isCompleted Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  id            String    @id @default(uuid())
+  title         String
+  isCompleted   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
 }
 
 model Conversation {
-  id        String   @id @default(uuid())
-  summary   String
-  createdAt DateTime @default(now())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  messages  ChatMessage[] // Adicione esta linha
+  id            String        @id @default(uuid())
+  summary       String
+  createdAt     DateTime      @default(now())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  messages      ChatMessage[]
 }
 
 model ChatMessage {
