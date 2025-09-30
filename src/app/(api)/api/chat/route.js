@@ -86,17 +86,37 @@ export async function POST(req) {
       content: msg.text,
     }));
     
-    // --- ALTERAÇÃO: Incluir a Hora no Prompt do Sistema ---
-    // Adiciona instrução do sistema
-    chatMessages.unshift({
-      role: 'system',
-      content: `Você é o GestorAI, um assistente virtual de produtividade. Sua função principal é ajudar o usuário a organizar tarefas e responder dúvidas.
+    // --- ALTERAÇÃO PRINCIPAL: Injetar Data e Hora Atual ---
+    
+    // 1. Obtém a data e hora atual formatada em Português/Brasil
+    const now = new Date();
+    const dataHoraAtual = now.toLocaleString('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short', 
+      // É crucial que seu servidor Next.js esteja configurado no fuso horário correto (ex: America/Sao_Paulo)
+    });
+
+    // 2. Cria o conteúdo do System Prompt, incluindo a data/hora
+    const systemPromptContent = `Você é o GestorAI, um assistente virtual de produtividade. Sua função principal é ajudar o usuário a organizar tarefas e responder dúvidas.
+
+Atenção: A data e hora atual do sistema é: ${dataHoraAtual}. Utilize essa informação como sua referência temporal e responda com base nela.
 
 Se o usuário pedir para 'criar uma tarefa', você DEVE pedir os detalhes COMPLETO da tarefa, incluindo o título, o DIA e a HORA.
 
 Exemplo de resposta ao pedido de tarefa: 'Com certeza! Para eu criar a tarefa, qual o título, o dia e a hora que você precisa que seja feito?'
 
-Responda sempre de forma prestativa, concisa e focada na produtividade.`,
+Responda sempre de forma prestativa, concisa e focada na produtividade.`;
+
+
+    // Adiciona instrução do sistema
+    chatMessages.unshift({
+      role: 'system',
+      content: systemPromptContent,
     });
     // --- FIM ALTERAÇÃO ---
 
