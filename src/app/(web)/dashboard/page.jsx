@@ -13,10 +13,11 @@ const capitalizeName = (name) => {
   }).join(' ');
 };
 
-const getSummary = (text) => {
-  const words = text.split(' ');
-  return words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
-};
+// REMOVEMOS A FUNÇÃO getSummary POIS AGORA USAMOS conv.summary DIRETO
+// const getSummary = (text) => {
+//   const words = text.split(' ');
+//   return words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
+// };
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -86,7 +87,8 @@ export default function DashboardPage() {
     
     // Salva o resumo da primeira mensagem
     if (!convIdToUse) {
-      const summary = getSummary(currentMessage);
+      // ATUALIZAÇÃO: Usando a primeira mensagem completa como resumo
+      const summary = currentMessage.trim(); 
       const newConv = await saveConversationSummary(token, summary);
       convIdToUse = newConv.conversation.id;
       setCurrentConversationId(newConv.conversation.id);
@@ -232,8 +234,9 @@ export default function DashboardPage() {
                 <div 
                   key={index} 
                   onClick={() => handleHistoryClick(conv.id)}
+                  // O conv.summary agora contém o resumo real ou a primeira mensagem completa.
                   className="cursor-pointer p-2 rounded-lg text-cream hover:bg-accent hover:text-white transition duration-200">
-                  {conv.summary}
+                  {conv.summary} 
                 </div>
               ))}
             </div>

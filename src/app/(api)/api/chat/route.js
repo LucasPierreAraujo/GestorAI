@@ -97,7 +97,7 @@ export async function POST(req) {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZoneName: 'short', 
+      timeZoneName: 'America/Sao_Paulo', 
       // É crucial que seu servidor Next.js esteja configurado no fuso horário correto (ex: America/Sao_Paulo)
     });
 

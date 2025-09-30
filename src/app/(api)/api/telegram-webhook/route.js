@@ -2,16 +2,16 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import prisma from '../../../../lib/prisma';
+import bcrypt from 'bcryptjs'; // Importe bcrypt para gerar a senha temporária
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const INTERNAL_USER_EMAIL = 'webhook@gestoai.com';
 
-// Gera token interno para autenticar /api/chat
-function getInternalToken() {
+// Função para gerar token interno (MANTIDA, mas o user é real agora)
+function getInternalToken(user) {
   const internalPayload = {
-    id: 'external-telegram-user-id',
-    email: INTERNAL_USER_EMAIL,
-    nomeCompleto: 'Telegram Webhook'
+    id: user.id,
+    email: user.email,
+    nomeCompleto: user.nomeCompleto
   };
   return jwt.sign(internalPayload, process.env.JWT_SECRET, { expiresIn: '5m' });
 }
@@ -22,8 +22,7 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  // ADICIONANDO LOG PARA VERIFICAR SE O ARQUIVO ESTÁ RECARREGADO
-  console.log("--- WEBHOOK INICIADO (VERSÃO DEBUG) ---"); 
+  console.log("--- WEBHOOK INICIADO ---"); 
 
   try {
     const body = await request.json();
@@ -43,17 +42,22 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Mensagem ou chatId ausente' }, { status: 400 });
     }
 
-    // 1. Busca ou cria usuário temporário
-    const userEmail = `${chatId}@telegram.local`;
+    // 1. Busca ou cria usuário
+    // Usamos um e-mail com o chatId, mas o prisma.user já tem a coluna 'senha' NOT NULL.
+    const userEmail = `telegram_${chatId}@gestorai.com`; // Usando um domínio específico
     let user = await prisma.user.findUnique({ where: { email: userEmail } });
     
+    // Se o usuário não existir, cria um temporário
     if (!user) {
-      // Usando uma senha dummy (a rota login/register exige senha)
-      const senhaDummy = 'temporal' + Math.random().toString(36).substring(2, 15); 
+      // Usando uma senha dummy (hash real, pois a coluna 'senha' é NOT NULL no DB)
+      const senhaDummy = 'temporal-telegram-user-' + chatId;
+      const salt = await bcrypt.genSalt(10); // Necessário importar bcryptjs no topo
+      const senhaHash = await bcrypt.hash(senhaDummy, salt);
+      
       user = await prisma.user.create({
         data: {
           email: userEmail,
-          senha: senhaDummy, 
+          senha: senhaHash, // Salva o hash da senha temporária
           nomeCompleto: `Usuário Telegram ${chatId}`
         },
       });
@@ -76,8 +80,8 @@ export async function POST(request) {
       console.log(`Nova conversa criada: ${conversation.id}`);
     }
 
-    // 3. OBTÉM o token interno
-    const internalToken = getInternalToken();
+    // 3. OBTÉM o token interno usando o usuário encontrado/criado
+    const internalToken = getInternalToken(user);
 
     // ==============================================================
     // LOG DE DEBUG DO PAYLOAD
