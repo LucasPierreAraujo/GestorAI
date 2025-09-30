@@ -73,12 +73,11 @@ export async function POST(req) {
       },
     });
 
-    // --- MUDANÇA 1: Limita o contexto para as últimas 10 mensagens (Performance) ---
-    // Busca histórico da conversa (apenas as 10 mais recentes)
+    // Limita o contexto para as últimas 10 mensagens (Performance)
     const messages = await prisma.chatMessage.findMany({
       where: { conversationId },
-      orderBy: { createdAt: 'desc' }, // Busca as mais recentes primeiro
-      take: 10, // Limita o contexto a 10 mensagens (5 trocas)
+      orderBy: { createdAt: 'desc' }, 
+      take: 10, 
     });
 
     // Formata mensagens para Groq (inverte a ordem para cronologia correta)
@@ -86,22 +85,20 @@ export async function POST(req) {
       role: msg.sender === 'user' ? 'user' : 'assistant',
       content: msg.text,
     }));
-    // --- FIM MUDANÇA 1 ---
-
-
-    // --- MUDANÇA 2: Instrução do Sistema detalhada (Foco) ---
+    
+    // --- ALTERAÇÃO: Incluir a Hora no Prompt do Sistema ---
     // Adiciona instrução do sistema
     chatMessages.unshift({
       role: 'system',
       content: `Você é o GestorAI, um assistente virtual de produtividade. Sua função principal é ajudar o usuário a organizar tarefas e responder dúvidas.
 
-Se o usuário pedir para 'criar uma tarefa', você DEVE pedir os detalhes da tarefa (qual o título ou o que precisa ser feito) para que a tarefa possa ser criada através da sua interface.
+Se o usuário pedir para 'criar uma tarefa', você DEVE pedir os detalhes COMPLETO da tarefa, incluindo o título, o DIA e a HORA.
 
-Exemplo de resposta ao pedido de tarefa: 'Com certeza! Para eu criar a tarefa, qual o título ou o que você precisa que seja feito?'
+Exemplo de resposta ao pedido de tarefa: 'Com certeza! Para eu criar a tarefa, qual o título, o dia e a hora que você precisa que seja feito?'
 
 Responda sempre de forma prestativa, concisa e focada na produtividade.`,
     });
-    // --- FIM MUDANÇA 2 ---
+    // --- FIM ALTERAÇÃO ---
 
     // Chamada Groq
     const chatCompletion = await groq.chat.completions.create({
