@@ -15,6 +15,23 @@ function getInternalToken() {
   return jwt.sign(internalPayload, process.env.JWT_SECRET, { expiresIn: '5m' });
 }
 
+// -------------------------------------------------------------
+// CORREÇÃO PARA HTTP ERROR 405
+// Permite que o Vercel retorne 200 OK (ou 405) para requisições GET
+// (que são as que o navegador envia ao acessar a URL).
+//
+// Embora um webhook só deva receber POST, Vercel/Next.js exige que
+// a função GET esteja presente para evitar 405 para requisições
+// não tratadas.
+// -------------------------------------------------------------
+export async function GET() {
+  // Retorna 200 OK e uma mensagem indicando que é um webhook
+  // Opcionalmente, pode retornar 405, mas 200 é mais amigável para verificação.
+  return NextResponse.json({ message: 'Este é o endpoint do Webhook do Telegram. Por favor, envie uma requisição POST.' }, { status: 200 });
+}
+// -------------------------------------------------------------
+
+
 export async function POST(request) {
   try {
     const body = await request.json();

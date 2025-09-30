@@ -1,10 +1,22 @@
-import prisma from '@/lib/prisma'; // 🚨 CORREÇÃO: Usa o alias que aponta para src/lib/prisma
+import prisma from '@/lib/prisma';
 import Groq from 'groq-sdk';
+import { NextResponse } from 'next/server'; // Importe NextResponse para usar na função GET
 
 // Inicializa o cliente Groq. Ele lerá a GROQ_API_KEY do seu .env
 const groq = new Groq();
 
-// Função que lida com a requisição POST
+// -----------------------------------------------------------------
+// CORREÇÃO PARA HTTP ERROR 405 (GET)
+// Informa ao servidor que GET não é suportado e retorna uma mensagem.
+// -----------------------------------------------------------------
+export async function GET() {
+  return NextResponse.json(
+    { message: 'Rota de chat aceita apenas requisições POST.' }, 
+    { status: 405 }
+  );
+}
+
+// Função que lida com a requisição POST (Lógica principal do chat)
 export async function POST(req) {
   
   // O App Router usa req.json() para obter o corpo da requisição
@@ -46,8 +58,10 @@ export async function POST(req) {
     });
 
     // 4. ENVIAR para Groq
+    // 🚨 AVISO: O modelo 'openai/gpt-oss-20b' provavelmente não é um modelo Groq.
+    // Sugestão: Use um modelo nativo Groq, como 'mixtral-8x7b-32768' ou 'llama3-8b-8192'.
     const chatCompletion = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-20b', 
+      model: 'openai/gpt-oss-20b', // Modelo Groq nativo
       messages: chatMessages,
     });
     
